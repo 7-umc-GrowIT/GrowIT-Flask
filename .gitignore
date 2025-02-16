@@ -1,0 +1,14 @@
+# Python 캐시 파일
+__pycache__/
+*.pyc
+*.pyo
+
+# 환경 변수 파일
+.env
+
+# IDE 설정 파일
+.vscode/
+.idea/
+
+# macOS 자동 생성 파일
+.DS_Store
