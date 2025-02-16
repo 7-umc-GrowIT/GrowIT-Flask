@@ -91,7 +91,7 @@ emotion_analyzer = EmotionAnalyzer()
 
 @app.route('/analyze_emotions', methods=['POST'])
 def analyze_emotions():
-    """감정 분석 API 엔드포인트"""
+    # 감정 분석 API 엔드포인트
     try:
         # request
         data = request.get_json()
