@@ -3,6 +3,7 @@ from flask import Flask, request, jsonify
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from dotenv import load_dotenv
+import numpy as np
 import os
 
 app = Flask(__name__)
@@ -61,7 +62,6 @@ class EmotionAnalyzer:
         if not input_text or not self.emotions or self.emotion_embeddings is None or len(self.emotion_embeddings) == 0:
             return None, 0
 
-        
         try:
             # 입력 텍스트의 임베딩 계산
             text_embedding = self.model.encode([input_text])
@@ -69,17 +69,23 @@ class EmotionAnalyzer:
             # 유사도 계산
             similarities = cosine_similarity(text_embedding, self.emotion_embeddings)[0]
             
+            # NumPy array를 파이썬 리스트로 변환 (JSON 직렬화를 위해)
+            similarities = similarities.tolist()
+            
             # 이미 사용된(= 원래 DB 존재했던 or 이전 유사도 분석에서 선택된) 감정은 제외
             for i, emotion in enumerate(self.emotions):
                 if emotion in used_emotions:
                     similarities[i] = -1
             
             # 가장 유사한 감정 찾기
-            best_match_index = similarities.argmax()
+            best_match_index = np.argmax(similarities)
+            
+            # float32를 일반 float으로 변환 (JSON 직렬화를 위해)
+            similarity_score = float(similarities[best_match_index])
             
             return (
                 self.emotions[best_match_index],
-                round(similarities[best_match_index] * 100, 2)
+                round(similarity_score * 100, 2)
             )
             
         except Exception as e:
@@ -116,15 +122,16 @@ def analyze_emotions():
             
             if similar_emotion:
                 results.append({
-                    "inputEmotion": emotion, # 입력 감정
-                    "similarEmotion": similar_emotion, # 유사한 감정
-                    "similarityScore": score # 유사도
+                    "inputEmotion": emotion,  # 입력 감정
+                    "similarEmotion": similar_emotion,  # 유사한 감정
+                    "similarityScore": score  # 유사도
                 })
-                used_emotions.add(similar_emotion) # 유사도 분석이 여러 번인 경우에도 중복되지 않도록
+                used_emotions.add(similar_emotion)  # 유사도 분석이 여러 번인 경우에도 중복되지 않도록
 
         return jsonify({"analyzedEmotions": results})
 
     except Exception as e:
+        print(f"Error occurred: {str(e)}")  # 디버깅을 위한 로그 추가
         return jsonify({"error": f"분석 중 오류 발생: {str(e)}"}), 500
 
 if __name__ == '__main__':
