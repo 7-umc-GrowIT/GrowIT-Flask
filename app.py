@@ -33,7 +33,7 @@ class EmotionAnalyzer:
         if EmotionAnalyzer._is_initialized:
             return
 
-        # 감정 분석 모델
+        # 임베딩 모델
         self.model = SentenceTransformer('paraphrase-multilingual-mpnet-base-v2')
         # DB에서 감정 목록 가져오기
         self.emotions = self._get_emotions_from_db()
@@ -56,7 +56,7 @@ class EmotionAnalyzer:
             print(f"DB 오류: {e}")
             return []
 
-    # 입력된 텍스트와 가장 유사한 감정 찾기
+    # 입력된 텍스트와 가장 유사한 감정과 유사도 점수 반환
     def find_similar_emotion(self, input_text, used_emotions):
         # 기본 체크
         if not input_text or not self.emotions or self.emotion_embeddings is None or len(self.emotion_embeddings) == 0:
@@ -69,10 +69,7 @@ class EmotionAnalyzer:
             # 유사도 계산
             similarities = cosine_similarity(text_embedding, self.emotion_embeddings)[0]
             
-            # NumPy array를 파이썬 리스트로 변환 (JSON 직렬화를 위해)
-            similarities = similarities.tolist()
-            
-            # 이미 사용된(= 원래 DB 존재했던 or 이전 유사도 분석에서 선택된) 감정은 제외
+            # 이전 유사도 분석에서 선택된 감정은 제외
             for i, emotion in enumerate(self.emotions):
                 if emotion in used_emotions:
                     similarities[i] = -1
@@ -80,8 +77,8 @@ class EmotionAnalyzer:
             # 가장 유사한 감정 찾기
             best_match_index = np.argmax(similarities)
             
-            # float32를 일반 float으로 변환 (JSON 직렬화를 위해)
-            similarity_score = float(similarities[best_match_index])
+            # 유사도 점수
+            similarity_score = similarities[best_match_index]
             
             return (
                 self.emotions[best_match_index],
@@ -106,7 +103,7 @@ def analyze_emotions():
 
         # 입력 감정과 이미 사용된(= 원래 DB 존재했던) 감정 가져오기
         input_emotions = data.get('emotions', [])
-        used_emotions = set(data.get('existingEmotions', []))
+        used_emotions = set()
 
         # 입력 감정이 없으면 에러
         if not input_emotions:
