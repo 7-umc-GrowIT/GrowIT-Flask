@@ -12,6 +12,7 @@ load_dotenv()
 # MySQL 연결 정보
 DB_CONFIG = {
     "host": os.getenv("DB_HOST"),
+    "port": int(os.getenv("DB_PORT")),
     "user": os.getenv("DB_USER"),
     "password": os.getenv("DB_PASSWORD"),
     "database": os.getenv("DB_NAME")
@@ -78,7 +79,7 @@ class EmotionAnalyzer:
             best_match_index = np.argmax(similarities)
             
             # 유사도 점수
-            similarity_score = similarities[best_match_index]
+            similarity_score = float(similarities[best_match_index])
             
             return (
                 self.emotions[best_match_index],
